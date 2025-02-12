@@ -1,26 +1,56 @@
-name: CD Pipeline
+name: CD Workflow
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Check out the code
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
 
-      - name: Build and push Docker image for linux/amd64
+      - name: Install dependencies
         run: |
-          docker build --platform linux/amd64 -t agentsmith27/fastapi-app:latest .
-          docker push agentsmith27/fastapi-app:latest
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Deploy to Render
+      - name: Deploy Application
         run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+          # Placeholder for deployment
+          echo "Deploying FastAPI application..."
+
+      - name: Restart application
+        run: |
+          # Restart the FastAPI application (e.g., using PM2 or systemd)
+          echo "Restarting FastAPI app"
+
+      - name: SSH into EC2 and deploy
+        env:
+          PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        run: |
+          set -e  # Ensure script fails on error
+          mkdir -p ~/.ssh
+          echo "$PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Clean up after using private key
+          trap 'rm -f ~/.ssh/id_rsa' EXIT
+
+          # SSH into EC2 and run deployment steps
+          ssh -o StrictHostKeyChecking=no ubuntu@35.175.235.40 << 'EOF'
+
+            # Pull the latest code or rebuild the Docker container
+            cd ~/fastapi-book-project
+            git pull origin main  # For using git to fetch the latest code
+
+            # For docker to rebuild the app container
+            docker-compose down
+            docker-compose up --build -d         
+          EOF

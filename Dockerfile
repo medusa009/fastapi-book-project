@@ -1,18 +1,20 @@
-# Use an official Python runtime as a base image
+# Use an official lightweight Python image as the base
 FROM python:3.12
 
-# Set the working directory inside the container
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy dependency file and install dependencies
-COPY requirements.txt .
+# Copy the requirements.txt into the container at /app
+COPY requirements.txt /app/
+
+# Install FastAPI dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the project files into the container
-COPY . .
+# Copy the entire project into the container
+COPY . /app/
 
-# Expose port 8000 for FastAPI
+# Expose the required port (default for FastAPI is 8000)
 EXPOSE 8000
 
-# Start the FastAPI application
+# Set the entry point for the container
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
